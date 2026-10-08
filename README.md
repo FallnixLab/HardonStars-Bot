@@ -19,6 +19,8 @@ Copy-Item .env.example .env
 python main.py
 ```
 
+Для фонового запуска на Windows можно запустить `run_forever.py`: он перезапускает бота с паузой, если Telegram API временно недоступен.
+
 ## Перед приёмом оплат
 
 - Укажите `BOT_TOKEN` от BotFather.
