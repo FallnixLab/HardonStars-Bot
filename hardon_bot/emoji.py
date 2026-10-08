@@ -14,8 +14,29 @@ CUSTOM_EMOJI = {
     "payhot_crypto": "5210814920924357232",
 }
 
-# Button icons are supplied by the owner. Keys can be filled as IDs arrive.
-BUTTON_CUSTOM_EMOJI: dict[str, str] = {}
+# Premium custom emoji used as Telegram inline keyboard button icons.
+BUTTON_CUSTOM_EMOJI: dict[str, str] = {
+    "stars": "5339326389734620043",
+    "premium": "5204330443725347173",
+    "ton": "5265151230790884988",
+    "balance": "5769403330761593044",
+    "profile": "5879770735999717115",
+    "info": "6028435952299413210",
+    "privacy": "6028435952299413210",
+    "projects": "6028171274939797252",
+    "support": "5213256712911363107",
+    "instructions": "5992157823838984339",
+    "rules": "6008090211181923982",
+    "agreement": "5960551395730919906",
+    "payments": "5927169041595634481",
+    "advertising": "5938539885907415367",
+    "custom_amount": "6039779802741739617",
+    "accept": "5825794181183836432",
+    "pay": "6039451237743595514",
+    "link": "6039451237743595514",
+    "check": "5244758760429213978",
+    "back": "5307655777635286834",
+}
 
 
 def rich_text(parts: Iterable[tuple[str, str | None]]) -> tuple[str, list[MessageEntity]]:
