@@ -15,8 +15,10 @@ from hardon_bot.database import Database, Order
 from hardon_bot.emoji import CUSTOM_EMOJI, rich_text
 from hardon_bot.fragment import FragmentDelivery, FragmentDeliveryError
 from hardon_bot.keyboards import (
+    back_to_info,
     back_to_menu,
     external_link,
+    information_menu,
     main_menu,
     pay_link,
     payment_methods,
@@ -394,7 +396,13 @@ async def payments_info(callback: CallbackQuery) -> None:
         ("Для Stars и Premium внутри Telegram используется только Telegram Stars (XTR).\n\nCryptoBot, PayHot и xRocket можно подключать для физических товаров или продаж вне Telegram. ЕРИП в предоставленной PayHot API-спецификации не указан.", None),
     ]
     text, entities = rich_text(parts)
-    await callback.message.answer(text, entities=entities, reply_markup=back_to_menu())
+    await callback.message.answer(text, entities=entities, reply_markup=back_to_info())
+    await callback.answer()
+
+
+@router.callback_query(F.data == "section:info")
+async def information(callback: CallbackQuery) -> None:
+    await callback.message.answer("ℹ️ Информация:", reply_markup=information_menu())
     await callback.answer()
 
 
@@ -466,10 +474,11 @@ async def info(callback: CallbackQuery, settings: Settings) -> None:
         ),
     }
     title, body, url = pages.get(section, ("Раздел", "Материал не найден.", ""))
+    return_callback = "home" if section == "support" else "section:info"
     if url:
-        keyboard = external_link("🔗 Открыть", url)
+        keyboard = external_link("🔗 Открыть", url, callback=return_callback)
     else:
-        keyboard = back_to_menu()
+        keyboard = back_to_menu() if section == "support" else back_to_info()
         if section in {"support", "advertising"}:
             body += "\n\nСсылка пока не настроена. Добавьте её в .env."
     await callback.message.answer(f"{title}\n\n{body}", reply_markup=keyboard)

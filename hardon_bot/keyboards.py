@@ -8,14 +8,23 @@ def main_menu() -> InlineKeyboardMarkup:
              InlineKeyboardButton(text="💎 Telegram Premium", callback_data="buy:premium")],
             [InlineKeyboardButton(text="💠 Баланс TON", callback_data="section:ton"),
              InlineKeyboardButton(text="👤 Профиль", callback_data="section:profile")],
-            [InlineKeyboardButton(text="💳 Способы оплаты", callback_data="section:payments"),
+            [InlineKeyboardButton(text="ℹ️ Информация", callback_data="section:info"),
              InlineKeyboardButton(text="✨ Наши проекты", callback_data="section:projects")],
+            [InlineKeyboardButton(text="🛡 Поддержка", callback_data="info:support")],
+        ]
+    )
+
+
+def information_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
             [InlineKeyboardButton(text="📖 Инструкция", callback_data="info:instructions"),
              InlineKeyboardButton(text="📑 Правила", callback_data="info:rules")],
             [InlineKeyboardButton(text="ⓘ Политика", callback_data="info:privacy"),
              InlineKeyboardButton(text="☑️ Соглашение", callback_data="info:terms")],
+            [InlineKeyboardButton(text="💳 Способы оплаты", callback_data="section:payments")],
             [InlineKeyboardButton(text="▣ Реклама", callback_data="info:advertising")],
-            [InlineKeyboardButton(text="🛡 Поддержка", callback_data="info:support")],
+            [InlineKeyboardButton(text="↩️ В меню", callback_data="home")],
         ]
     )
 
@@ -84,4 +93,10 @@ def external_link(label: str, url: str, callback: str = "home") -> InlineKeyboar
 def back_to_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="↩️ В меню", callback_data="home")]]
+    )
+
+
+def back_to_info() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="↩️ К информации", callback_data="section:info")]]
     )
