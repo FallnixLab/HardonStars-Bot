@@ -8,7 +8,7 @@ from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, LabeledPrice, Message, PreCheckoutQuery
+from aiogram.types import CallbackQuery, LabeledPrice, LinkPreviewOptions, Message, PreCheckoutQuery
 
 from hardon_bot.config import Settings
 from hardon_bot.database import Database, Order
@@ -65,9 +65,15 @@ async def answer_rich(
     parts: list[RichTextPart],
     *,
     reply_markup=None,
+    disable_link_preview: bool = False,
 ) -> None:
     text, entities = rich_text(parts)
-    await message.answer(text, entities=entities, reply_markup=reply_markup)
+    await message.answer(
+        text,
+        entities=entities,
+        reply_markup=reply_markup,
+        link_preview_options=LinkPreviewOptions(is_disabled=True) if disable_link_preview else None,
+    )
 
 
 async def answer_notice(
@@ -137,6 +143,7 @@ async def ask_stars_recipient(
             ("\n\nМожно указать свой username вручную или нажать «Купить для себя».", None),
         ],
         reply_markup=stars_recipient_actions(),
+        disable_link_preview=True,
     )
 
 
@@ -160,7 +167,7 @@ async def ask_stars_quantity(
     else:
         parts.extend([icon("custom_amount", "✍️"), (" Введите количество звёзд для покупки или выберите вариант ниже.", None)])
         keyboard = stars_amounts()
-    await answer_rich(message, parts, reply_markup=keyboard)
+    await answer_rich(message, parts, reply_markup=keyboard, disable_link_preview=True)
 
 
 def is_username(value: str) -> bool:
@@ -238,6 +245,15 @@ async def stars_quantity(
     callback: CallbackQuery, state: FSMContext, db: Database, settings: Settings
 ) -> None:
     value = callback.data.split(":", 1)[1]
+    if value == "self":
+        user = callback.from_user
+        if not user.username:
+            await callback.answer("Сначала добавьте username в настройках Telegram", show_alert=True)
+            return
+        await state.update_data(product="stars", target=user.username, target_label=user.full_name)
+        await ask_stars_quantity(callback.message, state)
+        await callback.answer()
+        return
     data = await state.get_data()
     if not data.get("target"):
         await callback.answer("Сначала выберите получателя", show_alert=True)
@@ -269,17 +285,6 @@ async def custom_stars(
         return
     await state.update_data(product="stars", quantity=quantity)
     await continue_to_checkout(message, state, db, settings)
-
-
-@router.callback_query(OrderForm.waiting_target, F.data == "stars:self")
-async def stars_for_self(callback: CallbackQuery, state: FSMContext) -> None:
-    user = callback.from_user
-    if not user.username:
-        await callback.answer("Сначала добавьте username в настройках Telegram", show_alert=True)
-        return
-    await state.update_data(product="stars", target=user.username, target_label=user.full_name)
-    await ask_stars_quantity(callback.message, state)
-    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("premium:"))
