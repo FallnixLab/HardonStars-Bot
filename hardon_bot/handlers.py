@@ -12,7 +12,7 @@ from aiogram.types import CallbackQuery, LabeledPrice, Message, PreCheckoutQuery
 
 from hardon_bot.config import Settings
 from hardon_bot.database import Database, Order
-from hardon_bot.emoji import BUTTON_CUSTOM_EMOJI, CUSTOM_EMOJI, RichTextPart, rich_text
+from hardon_bot.emoji import CUSTOM_EMOJI, MESSAGE_CUSTOM_EMOJI, RichTextPart, rich_text
 from hardon_bot.fragment import FragmentDelivery, FragmentDeliveryError
 from hardon_bot.keyboards import (
     back_to_info,
@@ -48,7 +48,7 @@ PRODUCT_NAMES = {"stars": "Telegram Stars", "premium": "Telegram Premium", "ton"
 
 
 def icon(key: str, fallback: str) -> tuple[str, str | None]:
-    return fallback, BUTTON_CUSTOM_EMOJI.get(key)
+    return fallback, MESSAGE_CUSTOM_EMOJI.get(key)
 
 
 def bold(value: str) -> RichTextPart:
@@ -472,7 +472,7 @@ async def payments_info(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "section:info")
 async def information(callback: CallbackQuery) -> None:
-    await answer_rich(callback.message, [icon("info", "ℹ️"), (" ", None), bold("Информация о сервисе Hardon Stars"), ("\n\nHardon Stars помогает оформить Telegram Stars и Telegram Premium. В профиле можно посмотреть сведения об аккаунте и заказах, а здесь — ознакомиться с правилами, инструкцией, политикой конфиденциальности, соглашением и вариантами оплаты.\n\n", None), icon("info", "ℹ️"), (" Выберите нужный раздел ниже:", None)], reply_markup=information_menu())
+    await answer_rich(callback.message, [icon("info", "ℹ️"), (" ", None), bold("Информация о сервисе Hardon Stars"), ("\n\n", None), icon("globe", "🌐"), (" Hardon Stars позволяет оформить Telegram Stars и Telegram Premium для себя или другого пользователя. В профиле можно посмотреть сведения об аккаунте и заказах, а здесь — ознакомиться с правилами, инструкцией, политикой конфиденциальности, соглашением и вариантами оплаты.\n\n", None), icon("down", "👇"), (" Выберите нужный раздел ниже:", None)], reply_markup=information_menu())
     await callback.answer()
 
 
@@ -491,7 +491,7 @@ async def projects(callback: CallbackQuery, settings: Settings) -> None:
 
 @router.message(Command("paysupport", "support"))
 async def paysupport(message: Message, settings: Settings) -> None:
-    parts: list[RichTextPart] = [icon("support", "🛡"), (" ", None), bold("Служба поддержки"), ("\n\nЕсли у вас возникли вопросы, проблемы с заказом или вы нашли ошибку, свяжитесь с нами по кнопке ниже. В сообщении укажите номер заказа, кратко опишите ситуацию и приложите подтверждение оплаты, если вопрос связан с платежом.\n\nОбычно отвечаем в течение 24 часов. По спорным заказам не создавайте повторную оплату до ответа специалиста.", None)]
+    parts: list[RichTextPart] = [icon("headset", "🎧"), (" ", None), bold("Служба поддержки"), ("\n\nЕсли у вас возникли вопросы, проблемы с заказом или вы нашли ошибку, свяжитесь с нами по кнопке ниже. В сообщении укажите номер заказа, кратко опишите ситуацию и приложите подтверждение оплаты, если вопрос связан с платежом.\n\nОбычно отвечаем в течение 24 часов. По спорным заказам не создавайте повторную оплату до ответа специалиста.", None)]
     if settings.support_url:
         await answer_rich(message, parts, reply_markup=external_link("Открыть поддержку", settings.support_url))
     else:
@@ -537,7 +537,7 @@ async def info(callback: CallbackQuery, settings: Settings) -> None:
             settings.advertising_url,
         ),
         "support": (
-            "support", "🛡", "Служба поддержки",
+            "headset", "🎧", "Служба поддержки",
             "Если у вас возникли вопросы, проблемы с пополнением или заказом либо вы нашли ошибку, воспользуйтесь кнопкой ниже.\n\nОбычно отвечаем в течение 24 часов. По вопросам оплаты или выдачи приложите номер заказа, время платежа и краткое описание ситуации. Не отправляйте пароли, коды Telegram или платёжные секреты.",
             settings.support_url,
         ),

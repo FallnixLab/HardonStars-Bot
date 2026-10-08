@@ -38,6 +38,14 @@ BUTTON_CUSTOM_EMOJI: dict[str, str] = {
     "back": "5307655777635286834",
 }
 
+# Additional Premium emoji used in regular message text (with MessageEntity).
+MESSAGE_CUSTOM_EMOJI: dict[str, str] = {
+    **BUTTON_CUSTOM_EMOJI,
+    "headset": "6007938409857815902",
+    "globe": "5776233299424843260",
+    "down": "5231102735817918643",
+}
+
 
 RichTextPart = tuple[str, str | None] | tuple[str, str | None, str]
 
