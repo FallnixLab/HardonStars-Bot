@@ -39,14 +39,19 @@ BUTTON_CUSTOM_EMOJI: dict[str, str] = {
 }
 
 
-def rich_text(parts: Iterable[tuple[str, str | None]]) -> tuple[str, list[MessageEntity]]:
+RichTextPart = tuple[str, str | None] | tuple[str, str | None, str]
+
+
+def rich_text(parts: Iterable[RichTextPart]) -> tuple[str, list[MessageEntity]]:
     text = ""
     entities: list[MessageEntity] = []
-    for value, custom_emoji_id in parts:
+    for part in parts:
+        value, custom_emoji_id = part[0], part[1]
+        formatting = part[2] if len(part) == 3 else None
+        offset = len(text.encode("utf-16-le")) // 2
+        length = len(value.encode("utf-16-le")) // 2
         if custom_emoji_id:
-            offset = len(text.encode("utf-16-le")) // 2
             text += value
-            length = len(value.encode("utf-16-le")) // 2
             entities.append(
                 MessageEntity(
                     type="custom_emoji",
@@ -57,4 +62,8 @@ def rich_text(parts: Iterable[tuple[str, str | None]]) -> tuple[str, list[Messag
             )
         else:
             text += value
+        if formatting:
+            entities.append(
+                MessageEntity(type=formatting, offset=offset, length=length)
+            )
     return text, entities
