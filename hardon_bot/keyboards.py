@@ -36,9 +36,9 @@ def main_menu() -> InlineKeyboardMarkup:
             ],
             [
                 _button("Информация", "ℹ️", icon_key="info", callback_data="section:info"),
-                _button("Наши проекты", "✨", icon_key="projects", callback_data="section:projects"),
+                _button("Поддержка", "🛡", icon_key="support", callback_data="info:support"),
             ],
-            [_button("Поддержка", "🛡", icon_key="support", callback_data="info:support")],
+            [_button("Наши проекты", "✨", icon_key="projects", callback_data="section:projects")],
         ]
     )
 
