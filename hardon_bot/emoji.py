@@ -50,7 +50,11 @@ MESSAGE_CUSTOM_EMOJI: dict[str, str] = {
 }
 
 
-RichTextPart = tuple[str, str | None] | tuple[str, str | None, str]
+RichTextPart = (
+    tuple[str, str | None]
+    | tuple[str, str | None, str]
+    | tuple[str, str | None, str | None, str]
+)
 
 
 def rich_text(parts: Iterable[RichTextPart]) -> tuple[str, list[MessageEntity]]:
@@ -59,6 +63,7 @@ def rich_text(parts: Iterable[RichTextPart]) -> tuple[str, list[MessageEntity]]:
     for part in parts:
         value, custom_emoji_id = part[0], part[1]
         formatting = part[2] if len(part) == 3 else None
+        link_url = part[3] if len(part) == 4 else None
         offset = len(text.encode("utf-16-le")) // 2
         length = len(value.encode("utf-16-le")) // 2
         if custom_emoji_id:
@@ -76,5 +81,9 @@ def rich_text(parts: Iterable[RichTextPart]) -> tuple[str, list[MessageEntity]]:
         if formatting:
             entities.append(
                 MessageEntity(type=formatting, offset=offset, length=length)
+            )
+        if link_url:
+            entities.append(
+                MessageEntity(type="text_link", offset=offset, length=length, url=link_url)
             )
     return text, entities

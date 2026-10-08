@@ -25,6 +25,7 @@ from hardon_bot.keyboards import (
     premium_durations,
     profile_actions,
     stars_amounts,
+    stars_recipient_actions,
     terms_consent,
 )
 from hardon_bot.payments import (
@@ -53,6 +54,10 @@ def icon(key: str, fallback: str) -> tuple[str, str | None]:
 
 def bold(value: str) -> RichTextPart:
     return value, None, "bold"
+
+
+def text_link(value: str, url: str) -> RichTextPart:
+    return value, None, None, url
 
 
 async def answer_rich(
@@ -116,6 +121,48 @@ async def ask_target(message: Message, state: FSMContext) -> None:
     )
 
 
+async def ask_stars_recipient(
+    message: Message, state: FSMContext, example_username: str | None = None
+) -> None:
+    await state.update_data(product="stars")
+    await state.set_state(OrderForm.waiting_target)
+    example = f"@{example_username}" if example_username else "@username"
+    await answer_rich(
+        message,
+        [
+            icon("stars", "⭐"), (" ", None), bold("Покупка звёзд"),
+            ("\n\n", None), icon("globe", "🌐"),
+            (" Пришлите username пользователя, которому будем дарить звёзды:\n", None),
+            icon("down", "👇"), (" Пример: ", None), text_link(example, f"https://t.me/{example.lstrip('@')}"),
+            ("\n\nМожно указать свой username вручную или нажать «Купить для себя».", None),
+        ],
+        reply_markup=stars_recipient_actions(),
+    )
+
+
+async def ask_stars_quantity(
+    message: Message, state: FSMContext, *, custom_entry: bool = False
+) -> None:
+    data = await state.get_data()
+    target = str(data.get("target", ""))
+    target_label = str(data.get("target_label") or f"@{target}")
+    await state.set_state(OrderForm.waiting_custom_stars)
+    parts: list[RichTextPart] = [
+        icon("stars", "⭐"), (" ", None), bold("Покупка звёзд"),
+        ("\n\n> ", None), icon("profile", "👤"), (" ", None), bold("Получатель: "),
+        text_link(target_label, f"https://t.me/{target}"),
+        ("\n\n", None), icon("accept", "✅"), (" Минимум: 50 звёзд\n", None),
+        icon("accept", "✅"), (" Максимум (за один заказ): 10 000 звёзд\n\n", None),
+    ]
+    if custom_entry:
+        parts.extend([icon("custom_amount", "✍️"), (" Введите количество звёзд от 50 до 10 000, кратное 50.", None)])
+        keyboard = back_to_menu()
+    else:
+        parts.extend([icon("custom_amount", "✍️"), (" Введите количество звёзд для покупки или выберите вариант ниже.", None)])
+        keyboard = stars_amounts()
+    await answer_rich(message, parts, reply_markup=keyboard)
+
+
 def is_username(value: str) -> bool:
     return bool(re.fullmatch(r"@?[A-Za-z0-9_]{5,32}", value.strip()))
 
@@ -161,8 +208,7 @@ async def home(callback: CallbackQuery, state: FSMContext, settings: Settings) -
 @router.callback_query(F.data == "buy:stars")
 async def choose_stars(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
-    await state.update_data(product="stars")
-    await answer_rich(callback.message, [icon("stars", "⭐"), (" ", None), bold("Покупка Telegram Stars"), ("\n\nВыберите готовое количество или укажите своё. Перед оплатой бот попросит username получателя.", None)], reply_markup=stars_amounts())
+    await ask_stars_recipient(callback.message, state, callback.from_user.username)
     await callback.answer()
 
 
@@ -188,29 +234,52 @@ async def ton_section(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("stars:"))
-async def stars_quantity(callback: CallbackQuery, state: FSMContext) -> None:
+async def stars_quantity(
+    callback: CallbackQuery, state: FSMContext, db: Database, settings: Settings
+) -> None:
     value = callback.data.split(":", 1)[1]
+    data = await state.get_data()
+    if not data.get("target"):
+        await callback.answer("Сначала выберите получателя", show_alert=True)
+        await ask_stars_recipient(callback.message, state, callback.from_user.username)
+        return
     if value == "custom":
-        await state.set_state(OrderForm.waiting_custom_stars)
-        await answer_rich(callback.message, [icon("custom_amount", "✍️"), (" ", None), bold("Своё количество Stars"), ("\n\nВведите число от 50 до 10 000. Количество должно быть кратно 50, например 150 или 1 250.", None)])
+        await ask_stars_quantity(callback.message, state, custom_entry=True)
     else:
         quantity = int(value)
         await state.update_data(product="stars", quantity=quantity)
-        await ask_target(callback.message, state)
+        await continue_to_checkout(callback.message, state, db, settings)
     await callback.answer()
 
 
 @router.message(OrderForm.waiting_custom_stars)
-async def custom_stars(message: Message, state: FSMContext) -> None:
+async def custom_stars(
+    message: Message, state: FSMContext, db: Database, settings: Settings
+) -> None:
     try:
         quantity = int((message.text or "").strip())
     except ValueError:
         quantity = 0
     if quantity < 50 or quantity > 10_000 or quantity % 50:
-        await answer_notice(message, "stars", "⭐", "Введите от 50 до 10 000 звёзд, кратно 50. Попробуйте ещё раз.")
+        await answer_rich(message, [icon("stars", "⭐"), (" ", None), bold("Некорректное количество"), ("\n\nВведите от 50 до 10 000 звёзд, кратно 50. Например, 150 или 1 250.", None)])
+        return
+    data = await state.get_data()
+    if not data.get("target"):
+        await ask_stars_recipient(message, state, message.from_user.username if message.from_user else None)
         return
     await state.update_data(product="stars", quantity=quantity)
-    await ask_target(message, state)
+    await continue_to_checkout(message, state, db, settings)
+
+
+@router.callback_query(OrderForm.waiting_target, F.data == "stars:self")
+async def stars_for_self(callback: CallbackQuery, state: FSMContext) -> None:
+    user = callback.from_user
+    if not user.username:
+        await callback.answer("Сначала добавьте username в настройках Telegram", show_alert=True)
+        return
+    await state.update_data(product="stars", target=user.username, target_label=user.full_name)
+    await ask_stars_quantity(callback.message, state)
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("premium:"))
@@ -230,18 +299,31 @@ async def receive_target(message: Message, state: FSMContext, db: Database, sett
     if not is_username(target):
         await answer_notice(message, "profile", "👤", "Нужен Telegram username длиной от 5 до 32 символов, например @username. Проверьте, что вы отправили именно имя пользователя, а не отображаемое имя.")
         return
-    await state.update_data(target=target.lstrip("@"))
-    await state.set_state(OrderForm.waiting_payment)
+    clean_target = target.lstrip("@")
+    await state.update_data(target=clean_target, target_label=f"@{clean_target}")
     data = await state.get_data()
     product = str(data.get("product"))
+    if product == "stars":
+        await ask_stars_quantity(message, state)
+        return
+    await continue_to_checkout(message, state, db, settings)
+
+
+async def continue_to_checkout(
+    message: Message, state: FSMContext, db: Database, settings: Settings
+) -> None:
+    await state.set_state(OrderForm.waiting_payment)
+    data = await state.get_data()
+    product = str(data.get("product", ""))
     quantity = int(data.get("quantity", 0))
+    target = str(data.get("target", ""))
     if not settings.terms_url:
         await answer_rich(message, [icon("agreement", "☑️"), (" ", None), bold("Заказ временно недоступен"), ("\n\nПеред приёмом оплаты необходимо опубликовать пользовательское соглашение и указать ссылку TERMS_URL в файле .env.", None)], reply_markup=back_to_menu())
         return
-    if not await db.has_accepted_terms(message.from_user.id):
+    if not message.from_user or not await db.has_accepted_terms(message.from_user.id):
         await answer_rich(message, [icon("agreement", "☑️"), (" ", None), bold("Перед заказом ознакомьтесь с условиями"), ("\n\nДля цифровых товаров, оформляемых внутри Telegram, используется оплата Telegram Stars. Откройте соглашение и подтвердите согласие, чтобы продолжить.", None)], reply_markup=terms_consent(settings.terms_url))
         return
-    await show_payment_choice(message, settings, product, quantity, target.lstrip("@"))
+    await show_payment_choice(message, settings, product, quantity, target)
 
 
 async def show_payment_choice(

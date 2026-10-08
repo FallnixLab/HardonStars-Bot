@@ -65,15 +65,26 @@ def stars_amounts() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                _button("50 ⭐", "⭐", style="success", icon_key="stars", callback_data="stars:50"),
-                _button("100 ⭐", "⭐", style="success", icon_key="stars", callback_data="stars:100"),
+                _button("50 ⭐", "⭐", icon_key="stars", callback_data="stars:50"),
+                _button("100 ⭐", "⭐", icon_key="stars", callback_data="stars:100"),
             ],
             [
-                _button("250 ⭐", "⭐", style="success", icon_key="stars", callback_data="stars:250"),
-                _button("500 ⭐", "⭐", style="success", icon_key="stars", callback_data="stars:500"),
+                _button("250 ⭐", "⭐", icon_key="stars", callback_data="stars:250"),
+                _button("500 ⭐", "⭐", icon_key="stars", callback_data="stars:500"),
             ],
             [_button("Свое количество", "✍️", icon_key="custom_amount", callback_data="stars:custom")],
-            [_button("В меню", "↩️", style="danger", icon_key="back", callback_data="home")],
+            [_button("Назад", "↩️", style="danger", icon_key="back", callback_data="home")],
+        ]
+    )
+
+
+def stars_recipient_actions() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                _button("Купить для себя", "👤", style="success", icon_key="profile", callback_data="stars:self"),
+                _button("Назад", "↩️", style="danger", icon_key="back", callback_data="home"),
+            ],
         ]
     )
 
