@@ -159,11 +159,20 @@ class XRocketGateway(_HttpGateway):
         body = {
             "priceAmount": str(amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
             "priceCurrency": self.settings.xrocket_price_currency,
-            "payCurrencies": list(self.settings.xrocket_pay_currencies),
             "clientInvoiceId": order_id,
             "description": description[:1000],
             "expiresIn": 3600000,
         }
+        if self.settings.xrocket_pay_currencies:
+            if len(self.settings.xrocket_pay_currencies) != 1:
+                raise PaymentProviderError(
+                    "xRocket Pay пока не поддерживает список нескольких валют в одном инвойсе"
+                )
+            if self.settings.xrocket_pay_currencies[0] != self.settings.xrocket_price_currency:
+                raise PaymentProviderError(
+                    "Для xRocket payCurrencies должен совпадать с priceCurrency"
+                )
+            body["payCurrencies"] = list(self.settings.xrocket_pay_currencies)
         data = await self.request(
             "POST", f"{self.base_url}/invoices", headers=self._headers(), json=body
         )
