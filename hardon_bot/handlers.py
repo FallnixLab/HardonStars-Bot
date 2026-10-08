@@ -414,10 +414,10 @@ async def profile(callback: CallbackQuery, db: Database) -> None:
     recent = await db.recent_orders(user.id, 5)
     parts: list[RichTextPart] = [
         icon("profile", "👤"), (" ", None), bold("Ваш профиль"),
-        ("\n\n", None), icon("profile", "👤"), (f" Telegram ID: {user.id}\n", None),
-        icon("profile", "👤"), (f" Username: @{user.username}" if user.username else " Username: не задан", None),
+        ("\n\n", None), icon("user_id", "👤"), (f" Telegram ID: {user.id}\n", None),
+        icon("username", "👤"), (f" Username: @{user.username}" if user.username else " Username: не задан", None),
         ("\n", None), icon("balance", "➕"), (" Баланс: пока не подключён", None),
-        ("\n", None), icon("stars", "⭐"), (f" Заказов: {total} · выдано: {delivered} · в обработке: {pending}", None),
+        ("\n", None), icon("orders", "⭐"), (f" Заказов: {total} · выдано: {delivered} · в обработке: {pending}", None),
     ]
     if recent:
         parts.extend([("\n\n", None), icon("check", "🔄"), (" ", None), bold("Последние заказы"), ("\n", None)])
