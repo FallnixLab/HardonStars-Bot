@@ -23,6 +23,7 @@ from hardon_bot.keyboards import (
     pay_link,
     payment_methods,
     premium_durations,
+    profile_actions,
     stars_amounts,
     terms_consent,
 )
@@ -369,6 +370,7 @@ async def profile(callback: CallbackQuery, db: Database) -> None:
         "👤 Ваш профиль",
         f"ID: {user.id}",
         f"Username: @{user.username}" if user.username else "Username: не задан",
+        "Баланс: не подключён",
         f"Заказов: {total} · выдано: {delivered} · в обработке: {pending}",
     ]
     if recent:
@@ -379,8 +381,27 @@ async def profile(callback: CallbackQuery, db: Database) -> None:
             )
     else:
         lines.append("\nПока заказов нет.")
-    await callback.message.answer("\n".join(lines), reply_markup=back_to_menu())
+    await callback.message.answer("\n".join(lines), reply_markup=profile_actions())
     await callback.answer()
+
+
+@router.callback_query(F.data == "balance:topup")
+async def balance_topup(callback: CallbackQuery, settings: Settings) -> None:
+    await callback.answer()
+    text = (
+        "Автоматическое пополнение баланса пока не подключено. "
+        "Для настройки нужны валюта баланса и способ пополнения."
+    )
+    if settings.support_url:
+        keyboard = external_link(
+            "Написать в поддержку",
+            settings.support_url,
+            callback="section:profile",
+            back_label="В профиль",
+        )
+    else:
+        keyboard = back_to_menu()
+    await callback.message.answer(text, reply_markup=keyboard)
 
 
 @router.callback_query(F.data == "section:payments")
@@ -408,17 +429,22 @@ async def information(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "section:projects")
 async def projects(callback: CallbackQuery, settings: Settings) -> None:
+    await callback.answer()
     sentence = "Hardon — создаем лучшие IT-решения для вашего удобства и безопасности!"
     text, entities = rich_text([("✨ ", None), (sentence, None)])
     entities.append(
-        MessageEntity(type="bold", offset=3, length=len(sentence.encode("utf-16-le")) // 2)
+        MessageEntity(
+            type="bold",
+            offset=len("✨ ".encode("utf-16-le")) // 2,
+            length=len(sentence.encode("utf-16-le")) // 2,
+        )
     )
+    project_url = settings.projects_url or "https://project.hardon.cc/"
     await callback.message.answer(
         text,
         entities=entities,
-        reply_markup=external_link("🔗Hardon Project", settings.projects_url),
+        reply_markup=external_link("Hardon Project", project_url),
     )
-    await callback.answer()
 
 
 @router.message(Command("paysupport", "support"))
