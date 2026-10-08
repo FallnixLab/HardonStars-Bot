@@ -65,12 +65,12 @@ def stars_amounts() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                _button("50 ⭐", "⭐", icon_key="stars", callback_data="stars:50"),
-                _button("100 ⭐", "⭐", icon_key="stars", callback_data="stars:100"),
+                _button("50", "⭐", icon_key="stars", callback_data="stars:50"),
+                _button("100", "⭐", icon_key="stars", callback_data="stars:100"),
             ],
             [
-                _button("250 ⭐", "⭐", icon_key="stars", callback_data="stars:250"),
-                _button("500 ⭐", "⭐", icon_key="stars", callback_data="stars:500"),
+                _button("250", "⭐", icon_key="stars", callback_data="stars:250"),
+                _button("500", "⭐", icon_key="stars", callback_data="stars:500"),
             ],
             [_button("Свое количество", "✍️", icon_key="custom_amount", callback_data="stars:custom")],
             [_button("Назад", "↩️", style="danger", icon_key="back", callback_data="home")],
