@@ -3,8 +3,10 @@ from __future__ import annotations
 import logging
 import re
 from decimal import Decimal
+from html import escape as html_escape
 
 from aiogram import Bot, F, Router
+from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -154,20 +156,30 @@ async def ask_stars_quantity(
     target = str(data.get("target", ""))
     target_label = str(data.get("target_label") or f"@{target}")
     await state.set_state(OrderForm.waiting_custom_stars)
-    parts: list[RichTextPart] = [
-        icon("stars", "⭐"), (" ", None), bold("Покупка звёзд"),
-        ("\n\n> ", None), icon("profile", "👤"), (" ", None), bold("Получатель: "),
-        text_link(target_label, f"https://t.me/{target}"),
-        ("\n\n", None), icon("accept", "✅"), (" Минимум: 50 звёзд\n", None),
-        icon("accept", "✅"), (" Максимум (за один заказ): 10 000 звёзд\n\n", None),
-    ]
+    stars_emoji = MESSAGE_CUSTOM_EMOJI["stars"]
+    profile_emoji = MESSAGE_CUSTOM_EMOJI["profile"]
+    confirm_emoji = MESSAGE_CUSTOM_EMOJI["accept"]
+    text_emoji = MESSAGE_CUSTOM_EMOJI["custom_amount"]
+    text = (
+        f'<tg-emoji emoji-id="{stars_emoji}">⭐</tg-emoji> <b>Покупка звёзд</b>\n\n'
+        f'<blockquote><tg-emoji emoji-id="{profile_emoji}">👤</tg-emoji> '
+        f'<b>Получатель:</b> <a href="https://t.me/{html_escape(target, quote=True)}">'
+        f'{html_escape(target_label)}</a></blockquote>\n\n'
+        f'<tg-emoji emoji-id="{confirm_emoji}">✅</tg-emoji> <b>Минимум: 50 звёзд</b>\n'
+        f'<tg-emoji emoji-id="{confirm_emoji}">✅</tg-emoji> <b>Максимум (за один заказ): 10 000 звёзд</b>\n\n'
+    )
     if custom_entry:
-        parts.extend([icon("custom_amount", "✍️"), (" Введите количество звёзд от 50 до 10 000, кратное 50.", None)])
+        text += f'<tg-emoji emoji-id="{text_emoji}">✍️</tg-emoji> Введите количество звёзд от 50 до 10 000, кратное 50.'
         keyboard = back_to_menu()
     else:
-        parts.extend([icon("custom_amount", "✍️"), (" Введите количество звёзд для покупки или выберите вариант ниже.", None)])
+        text += f'<tg-emoji emoji-id="{text_emoji}">✍️</tg-emoji> Введите количество звёзд для покупки или выберите вариант ниже.'
         keyboard = stars_amounts()
-    await answer_rich(message, parts, reply_markup=keyboard, disable_link_preview=True)
+    await message.answer(
+        text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=keyboard,
+        link_preview_options=LinkPreviewOptions(is_disabled=True),
+    )
 
 
 def is_username(value: str) -> bool:
